@@ -8,7 +8,7 @@ contract Config {
 
     uint256 internal initPrice = 0.01 ether;
 
-    uint256 internal period = 12 * 30;
+    uint256 internal period = 3600 * 12;
 
     uint256 internal devCut1 = 5;
     uint256 internal devCut2 = 4;
