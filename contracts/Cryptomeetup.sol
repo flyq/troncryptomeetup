@@ -1,5 +1,6 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.23;
 
+import "./Config.sol";
 
 /**
  * @title SafeMath
@@ -596,7 +597,7 @@ contract ERC721Enumerable is ERC165, ERC721, IERC721Enumerable {
     mapping(uint256 => uint256) private _ownedTokensIndex;
 
     // Array with all token ids, used for enumeration
-    uint256[] private _allTokens;
+    uint256[] internal _allTokens;
 
     // Mapping from token id to position in the allTokens array
     mapping(uint256 => uint256) private _allTokensIndex;
@@ -1057,13 +1058,8 @@ contract ERC721Holder is IERC721Receiver {
 }
 
 
-contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holder {
+contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holder, Config {
     mapping (uint256 => uint256) private priceOf;
-
-    uint256 private increaseLimit1 = 0.02  ether;
-    uint256 private increaseLimit2 = 0.5  ether;
-    uint256 private increaseLimit3 = 2.0  ether;
-    uint256 private increaseLimit4 = 5.0  ether;
 
     struct Global {
         uint256 begin;
@@ -1074,8 +1070,8 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
     mapping(uint256 => Global) global; 
     uint256 indexOfGlobal;
 
-    event Bought (uint256 indexed _itemId, address indexed _owner, uint256 _price);
-    event Sold (uint256 indexed _itemId, address indexed _owner, uint256 _price);    
+    event Bought(uint256 indexed _itemId, address indexed _owner, uint256 _price);
+    event Sold(uint256 indexed _itemId, address indexed _owner, uint256 _price);    
 
     constructor() ERC721Metadata("cryptomeetup", "CMU") public {
     }
@@ -1106,21 +1102,21 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
 
         indexOfGlobal = 1;
         global[indexOfGlobal].begin = now;
-        global[indexOfGlobal].end = now.add(3600 * 24 * 30);
-        global[indexOfGlobal].last = address(0);
+        global[indexOfGlobal].end = now.add(period);
+        global[indexOfGlobal].lastone = address(0);
     }
 
     function calculateDevCut(uint256 price) public view returns (uint256 _devCut) {
         if (price < increaseLimit1) {
-            return price.mul(5).div(100); // 5%
+            return price.mul(devCut1).div(100); // 5%
         } else if (price < increaseLimit2) {
-            return price.mul(4).div(100); // 4%
+            return price.mul(devCut2).div(100); // 4%
         } else if (price < increaseLimit3) {
-            return price.mul(3).div(100); // 3%
+            return price.mul(devCut3).div(100); // 3%
         } else if (price < increaseLimit4) {
-            return price.mul(3).div(100); // 3%
+            return price.mul(devCut3).div(100); // 3%
         } else {
-            return price.mul(2).div(100); // 2%
+            return price.mul(devCut4).div(100); // 2%
         }
     }
 
@@ -1146,23 +1142,25 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
         require(priceOfToken(tokenId) > 0);
         require(ownerOf(tokenId) != address(0));        
 
-
-
-
-        if(global[indexOfGlobal].end <= now)
+        if(global[indexOfGlobal].end <= now) {
+            newGlobal();
+            buyinternal(tokenId, msg.sender, msg.value);
+        } else {
+            buyinternal(tokenId, msg.sender, msg.value);
+        }
     }
 
     function buyinternal(uint256 tokenId, address payer, uint256 amount)  internal {
         require(priceOfToken(tokenId) > 0);
         require(ownerOf(tokenId) != address(0));
         require(amount >= priceOfToken(tokenId));
-        require(ownerOf(tokenId) != msg.sender);
-        require(!msg.sender.isContract());
-        require(msg.sender != address(0));
+        require(ownerOf(tokenId) != payer);
+        require(!payer.isContract());
+        require(payer != address(0));
         require(global[indexOfGlobal].end > now);
 
         address oldOwner = ownerOf(tokenId);
-        address newOwner = msg.sender;
+        address newOwner = payer;
         uint256 price = priceOfToken(tokenId);
         uint256 excess = amount.sub(price);
 
@@ -1183,6 +1181,16 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
             newOwner.transfer(excess);
         }
 
+    }
+
+    function newGlobal() internal {
+        for (uint256 i = 1; i <= _allTokens.length; i++) {
+            priceOf[i] = initPrice;
+        }
+        indexOfGlobal++;
+        global[indexOfGlobal].begin = now;
+        global[indexOfGlobal].end = now.add(period);
+        global[indexOfGlobal].lastone = address(0);
     }
 
 
@@ -1220,6 +1228,7 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
         _lastone = global[index].lastone;
     }
 
-    function getNowGlobal() public view returns(uint256 _begin, uint256 _end, address _lastone) {
+    function getNowGlobal() public view returns(uint256, uint256, address) {
         getGlobal(indexOfGlobal);
     }
+}
