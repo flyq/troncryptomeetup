@@ -14,6 +14,11 @@ contract Config {
     uint256 internal devCut2 = 4;
     uint256 internal devCut3 = 3;
     uint256 internal devCut4 = 2;
+
+    uint256 internal secondsPerHundredTron = 60;
+
+    uint256 internal toPool = 2;
+
 }
 
 // tokenId 必须从1开始，否则新开一轮的时候有问题

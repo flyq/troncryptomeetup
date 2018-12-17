@@ -1187,7 +1187,7 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
         }
 
         global[indexOfGlobal].lastone = payer;
-        global[indexOfGlobal].end = global[indexOfGlobal].add(amount.mul(secondsPerHundredTron).div(1e8));
+        global[indexOfGlobal].end = global[indexOfGlobal].end.add(amount.mul(secondsPerHundredTron).div(1e8));
     }
 
     function newGlobal() internal {
