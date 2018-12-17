@@ -1140,7 +1140,7 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
         return calculateNextPrice(priceOfToken(tokenID));
     }    
 
-    function buy(uint256 tokenId) payable public {
+    function buy(uint256 tokenId) payable public whenNotPaused {
         require(priceOfToken(tokenId) > 0);
         require(ownerOf(tokenId) != address(0));        
 
