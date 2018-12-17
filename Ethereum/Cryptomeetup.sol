@@ -1204,6 +1204,7 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
     function awardPool() internal {
         address player = global[indexOfGlobal].lastone;
         uint256 amount = global[indexOfGlobal].pool;
+        require(player != address(0));
         player.transfer(amount);
     }
 
@@ -1226,7 +1227,7 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
         return priceOf[tokenID];
     }    
 
-    function allOf (uint256 _itemId) external view returns (address _owner, uint256 _price, uint256 _nextPrice) {
+    function allOf(uint256 _itemId) external view returns (address _owner, uint256 _price, uint256 _nextPrice) {
         return (ownerOf(_itemId), priceOfToken(_itemId), nextPriceOf(_itemId));
     }
 
