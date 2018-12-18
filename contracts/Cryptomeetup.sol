@@ -1059,7 +1059,6 @@ contract ERC721Holder is IERC721Receiver {
 
 
 contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holder, Config {
-    mapping (uint256 => uint256) private priceOf;
 
     struct Global {
         uint256 begin;
@@ -1070,11 +1069,17 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
 
     mapping(uint256 => Global) global; 
     uint256 indexOfGlobal;
+    mapping (uint256 => uint256) private priceOf;
 
     event Bought(uint256 indexed _itemId, address indexed _owner, uint256 _price);
     event Sold(uint256 indexed _itemId, address indexed _owner, uint256 _price);    
 
     constructor() ERC721Metadata("cryptomeetup", "CMU") public {
+        indexOfGlobal = 1;
+        global[indexOfGlobal].begin = now;
+        global[indexOfGlobal].end = now.add(period);
+        global[indexOfGlobal].lastone = address(0);
+        global[indexOfGlobal].pool = 0;        
     }
 
     function transferERC721Token(address contractaddr, uint256 tokenId) public onlyMinter {
@@ -1096,49 +1101,25 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
         return true;
     }
 
-    function init(uint256 l, uint256 r, uint256 price) public onlyMinter {
-        for(uint256 i = l; i < r; i++) {
-            mint(msg.sender, i, price);
+    function init(uint256 l, uint256 r) public onlyMinter {
+        for(uint256 i = l; i <= r; i++) {
+            mint(msg.sender, i, initPrice);
         }
+    }
 
-        indexOfGlobal = 1;
+    function newGlobalPrice(uint256 l, uint256 r) public onlyMinter whenNotPaused {
+        for (uint256 i = l; i <= r; i++) {
+            priceOf[i] = initPrice;
+        }
+    }
+
+    function newGlobalGlobal() public onlyMinter whenNotPaused {
+        indexOfGlobal++;
         global[indexOfGlobal].begin = now;
         global[indexOfGlobal].end = now.add(period);
         global[indexOfGlobal].lastone = address(0);
-        global[indexOfGlobal].pool = 0;
-    }
-
-    function calculateDevCut(uint256 price) public view returns (uint256 _devCut) {
-        if (price < increaseLimit1) {
-            return price.mul(devCut1).div(100); // 5%
-        } else if (price < increaseLimit2) {
-            return price.mul(devCut2).div(100); // 4%
-        } else if (price < increaseLimit3) {
-            return price.mul(devCut3).div(100); // 3%
-        } else if (price < increaseLimit4) {
-            return price.mul(devCut3).div(100); // 3%
-        } else {
-            return price.mul(devCut4).div(100); // 2%
-        }
-    }
-
-    function calculateNextPrice(uint256 _price) public view returns (uint256 _nextPrice) {
-        if (_price < increaseLimit1) {
-            return _price.mul(200).div(95);
-        } else if (_price < increaseLimit2) {
-            return _price.mul(135).div(96);
-        } else if (_price < increaseLimit3) {
-            return _price.mul(125).div(97);
-        } else if (_price < increaseLimit4) {
-            return _price.mul(117).div(97);
-        } else {
-            return _price.mul(115).div(98);
-        }
-    }  
-
-    function nextPriceOf(uint256 tokenID) public view returns (uint256) {
-        return calculateNextPrice(priceOfToken(tokenID));
-    }    
+        global[indexOfGlobal].pool = 0;        
+    } 
 
     function buy(uint256 tokenId) public payable whenNotPaused {
         require(priceOfToken(tokenId) > 0);
@@ -1146,11 +1127,19 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
 
         if(global[indexOfGlobal].end <= now) {
             awardPool();
-            newGlobal();
+            newGlobalPrice(1, _allTokens.length);
+            newGlobalGlobal();
             buyinternal(tokenId, msg.sender, msg.value);
         } else {
             buyinternal(tokenId, msg.sender, msg.value);
         }
+    }
+
+    function awardPool() public onlyMinter whenNotPaused {
+        address player = global[indexOfGlobal].lastone;
+        uint256 amount = global[indexOfGlobal].pool;
+        require(player != address(0));
+        player.transfer(amount);
     }
 
     function buyinternal(uint256 tokenId, address payer, uint256 amount)  internal {
@@ -1190,23 +1179,6 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
         global[indexOfGlobal].end = global[indexOfGlobal].end.add(price.mul(secondsPerHundredTron).div(1e8));
     }
 
-    function newGlobal() internal {
-        for (uint256 i = 1; i <= _allTokens.length; i++) {
-            priceOf[i] = initPrice;
-        }
-        indexOfGlobal++;
-        global[indexOfGlobal].begin = now;
-        global[indexOfGlobal].end = now.add(period);
-        global[indexOfGlobal].lastone = address(0);
-        global[indexOfGlobal].pool = 0;
-    }
-
-    function awardPool() internal {
-        address player = global[indexOfGlobal].lastone;
-        uint256 amount = global[indexOfGlobal].pool;
-        require(player != address(0));
-        player.transfer(amount);
-    }
 
 
     /* Withdraw */
@@ -1235,19 +1207,71 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
         return indexOfGlobal;
     }
 
-    function getGlobal(uint256 index) public view returns(uint256 _begin, uint256 _end, address _lastone) {
+    function getGlobalBegin(uint256 index) public view returns(uint256 _begin) {
+        require(index <= indexOfGlobal);
+        _begin = global[index].begin;
+    }
+
+    function getGlobalEnd(uint256 index) public view returns(uint256 _end) {
+        require(index <= indexOfGlobal);
+        _end = global[index].end;
+    }
+
+    function getGlobalLastOne(uint256 index) public view returns(address _lastone) {
+        require(index <= indexOfGlobal);
+        _lastone = global[index].lastone;
+    }
+
+    function getGlobalPool(uint256 index) public view returns(uint256 _pool) {
+        require(index <= indexOfGlobal);
+        _pool = global[index].pool;
+    }
+
+    function getGlobal(uint256 index) public view returns(uint256 _begin, uint256 _end, address _lastone, uint256 _pool) {
         require(index <= indexOfGlobal);
 
         _begin = global[index].begin;
         _end = global[index].end;
         _lastone = global[index].lastone;
+        _pool = global[index].pool;
     }
 
-    function getNowGlobal() public view returns(uint256 _begin, uint256 _end, address _lastone) {
-        getGlobal(indexOfGlobal);
-
+    function getNowGlobal() public view returns(uint256 _begin, uint256 _end, address _lastone, uint256 _pool) {
         _begin = global[indexOfGlobal].begin;
         _end = global[indexOfGlobal].end;
-        _lastone = global[indexOfGlobal].lastone;   
+        _lastone = global[indexOfGlobal].lastone;
+        _pool = global[indexOfGlobal].pool;
     }
+
+    function calculateDevCut(uint256 price) public view returns (uint256 _devCut) {
+        if (price < increaseLimit1) {
+            return price.mul(devCut1).div(100); // 5%
+        } else if (price < increaseLimit2) {
+            return price.mul(devCut2).div(100); // 4%
+        } else if (price < increaseLimit3) {
+            return price.mul(devCut3).div(100); // 3%
+        } else if (price < increaseLimit4) {
+            return price.mul(devCut3).div(100); // 3%
+        } else {
+            return price.mul(devCut4).div(100); // 2%
+        }
+    }
+
+    function calculateNextPrice(uint256 _price) public view returns (uint256 _nextPrice) {
+        if (_price < increaseLimit1) {
+            return _price.mul(200).div(95);
+        } else if (_price < increaseLimit2) {
+            return _price.mul(135).div(96);
+        } else if (_price < increaseLimit3) {
+            return _price.mul(125).div(97);
+        } else if (_price < increaseLimit4) {
+            return _price.mul(117).div(97);
+        } else {
+            return _price.mul(115).div(98);
+        }
+    }  
+
+    function nextPriceOf(uint256 tokenID) public view returns (uint256) {
+        return calculateNextPrice(priceOfToken(tokenID));
+    }       
 }

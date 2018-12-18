@@ -1235,19 +1235,40 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
         return indexOfGlobal;
     }
 
-    function getGlobal(uint256 index) public view returns(uint256 _begin, uint256 _end, address _lastone) {
+    function getGlobalBegin(uint256 index) public view returns(uint256 _begin) {
+        require(index <= indexOfGlobal);
+        _begin = global[index].begin;
+    }
+
+    function getGlobalEnd(uint256 index) public view returns(uint256 _end) {
+        require(index <= indexOfGlobal);
+        _end = global[index].end;
+    }
+
+    function getGlobalLastOne(uint256 index) public view returns(uint256 _lastone) {
+        require(index <= indexOfGlobal);
+        _lastone = global[index].lastone;
+    }
+
+    function getGlobalPool(uint256 index) public view returns(uint256 _pool) {
+        require(index <= indexOfGlobal);
+        _pool = global[index].pool;
+    }
+
+    function getGlobal(uint256 index) public view returns(uint256 _begin, uint256 _end, address _lastone, uint256 _pool) {
         require(index <= indexOfGlobal);
 
         _begin = global[index].begin;
         _end = global[index].end;
         _lastone = global[index].lastone;
+        _pool = global[index].pool;
     }
 
     function getNowGlobal() public view returns(uint256 _begin, uint256 _end, address _lastone) {
-        getGlobal(indexOfGlobal);
-
         _begin = global[indexOfGlobal].begin;
         _end = global[indexOfGlobal].end;
-        _lastone = global[indexOfGlobal].lastone;   
+        _lastone = global[indexOfGlobal].lastone;
+        _pool = global[indexOfGlobal].pool;
     }
+
 }

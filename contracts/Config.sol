@@ -1,12 +1,12 @@
 pragma solidity ^0.4.23;
 
 contract Config {
-    uint256 internal increaseLimit1 = 2000  trx;
-    uint256 internal increaseLimit2 = 50000  trx;
-    uint256 internal increaseLimit3 = 200000  trx;
-    uint256 internal increaseLimit4 = 500000  trx;  
+    uint256 internal increaseLimit1 = 20  trx;
+    uint256 internal increaseLimit2 = 500  trx;
+    uint256 internal increaseLimit3 = 2000  trx;
+    uint256 internal increaseLimit4 = 5000  trx;  
 
-    uint256 internal initPrice = 1000 trx;
+    uint256 internal initPrice = 10 trx;
 
     uint256 internal period = 3600 * 24 * 30;
 
