@@ -1140,7 +1140,7 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
         return calculateNextPrice(priceOfToken(tokenID));
     }    
 
-    function buy(uint256 tokenId) payable public whenNotPaused {
+    function buy(uint256 tokenId) public payable whenNotPaused {
         require(priceOfToken(tokenId) > 0);
         require(ownerOf(tokenId) != address(0));        
 
@@ -1187,7 +1187,7 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
         }
 
         global[indexOfGlobal].lastone = payer;
-        global[indexOfGlobal].end = global[indexOfGlobal].end.add(amount.mul(secondsPerHundredTron).div(1e8));
+        global[indexOfGlobal].end = global[indexOfGlobal].end.add(price.mul(secondsPerHundredTron).div(1e8));
     }
 
     function newGlobal() internal {
