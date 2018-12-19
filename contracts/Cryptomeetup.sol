@@ -1074,12 +1074,7 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
     event Bought(uint256 indexed _itemId, address indexed _owner, uint256 _price);
     event Sold(uint256 indexed _itemId, address indexed _owner, uint256 _price);    
 
-    constructor() ERC721Metadata("cryptomeetup", "CMU") public {
-        indexOfGlobal = 1;
-        global[indexOfGlobal].begin = now;
-        global[indexOfGlobal].end = now.add(period);
-        global[indexOfGlobal].lastone = address(0);
-        global[indexOfGlobal].pool = 0;        
+    constructor() ERC721Metadata("cryptomeetup", "CMU") public {       
     }
 
     function transferERC721Token(address contractaddr, uint256 tokenId) public onlyMinter {
@@ -1105,6 +1100,11 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
         for(uint256 i = l; i <= r; i++) {
             mint(msg.sender, i, initPrice);
         }
+        indexOfGlobal = 1;
+        global[indexOfGlobal].begin = now;
+        global[indexOfGlobal].end = now.add(period);
+        global[indexOfGlobal].lastone = address(0);
+        global[indexOfGlobal].pool = 0; 
     }
 
     function newGlobalPrice(uint256 l, uint256 r) public onlyMinter whenNotPaused {
