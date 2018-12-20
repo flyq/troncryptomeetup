@@ -1065,6 +1065,7 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
         uint256 end;
         address lastone;
         uint256 pool;
+        uint256 devCut;
     }
 
     mapping(uint256 => Global) global; 
@@ -1100,11 +1101,15 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
         for(uint256 i = l; i <= r; i++) {
             mint(msg.sender, i, initPrice);
         }
+    }
+
+    function initGlobal() public onlyMinter {
         indexOfGlobal = 1;
         global[indexOfGlobal].begin = now;
         global[indexOfGlobal].end = now.add(period);
         global[indexOfGlobal].lastone = address(0);
-        global[indexOfGlobal].pool = 0; 
+        global[indexOfGlobal].pool = 0;
+        global[indexOfGlobal].devCut = 0;
     }
 
     function newGlobalPrice(uint256 l, uint256 r) public onlyMinter whenNotPaused {
@@ -1118,7 +1123,8 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
         global[indexOfGlobal].begin = now;
         global[indexOfGlobal].end = now.add(period);
         global[indexOfGlobal].lastone = address(0);
-        global[indexOfGlobal].pool = 0;        
+        global[indexOfGlobal].pool = 0;
+        global[indexOfGlobal].devCut = 0; 
     } 
 
     function buy(uint256 tokenId) public payable whenNotPaused {
@@ -1164,11 +1170,11 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
 
         // Devevloper's cut which is left in contract and accesed by
         // `withdrawAll` and `withdrawAmountTo` methods.
-        uint256 devCut = calculateDevCut(price);
+        uint256 _devCut = calculateDevCut(price);
 
         uint256 _pool = price.mul(toPool).div(100);
         // Transfer payment to old owner minus the developer's cut.
-        oldOwner.transfer(price.sub(devCut).sub(_pool));
+        oldOwner.transfer(price.sub(_devCut).sub(_pool));
 
 
         if (excess > 0) {
@@ -1177,6 +1183,8 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
 
         global[indexOfGlobal].lastone = payer;
         global[indexOfGlobal].end = global[indexOfGlobal].end.add(price.mul(secondsPerHundredTron).div(1e8));
+        global[indexOfGlobal].pool = global[indexOfGlobal].pool.add(_pool);
+        global[indexOfGlobal].devCut = global[indexOfGlobal].devCut.add(_devCut);
     }
 
 
@@ -1227,20 +1235,27 @@ contract Cryptomeetup is ERC721Full, ERC721Pausable, ERC721Mintable, ERC721Holde
         _pool = global[index].pool;
     }
 
-    function getGlobal(uint256 index) public view returns(uint256 _begin, uint256 _end, address _lastone, uint256 _pool) {
+    function getGlobalDevCut(uint256 index) public view returns(uint256 _devCut) {
+        require(index <= indexOfGlobal);
+        _devCut = global[index].devCut;
+    }
+
+    function getGlobal(uint256 index) public view returns(uint256 _begin, uint256 _end, address _lastone, uint256 _pool, uint256 _devCut) {
         require(index <= indexOfGlobal);
 
         _begin = global[index].begin;
         _end = global[index].end;
         _lastone = global[index].lastone;
         _pool = global[index].pool;
+        _devCut = global[index].devCut;
     }
 
-    function getNowGlobal() public view returns(uint256 _begin, uint256 _end, address _lastone, uint256 _pool) {
+    function getNowGlobal() public view returns(uint256 _begin, uint256 _end, address _lastone, uint256 _pool, uint256 _devCut) {
         _begin = global[indexOfGlobal].begin;
         _end = global[indexOfGlobal].end;
         _lastone = global[indexOfGlobal].lastone;
         _pool = global[indexOfGlobal].pool;
+        _devCut = global[indexOfGlobal].devCut;
     }
 
     function calculateDevCut(uint256 price) public view returns (uint256 _devCut) {
